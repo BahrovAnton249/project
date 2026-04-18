@@ -4,7 +4,24 @@ const products = [
     { id: 3, name: 'Beretta M9', price: 500, img: 'M9.jpg', desc: 'Прост в использовании, легок в перезарядке.', link: 'M9.html' }
 ];
 
+
 let cart = [];
+
+function loadCartFromLocalStorage() {
+    const savedCart = localStorage.getItem('shoppingCart');
+    if (savedCart) {
+        cart = JSON.parse(savedCart);
+    } else {
+        cart = [];
+    }
+    showCart();
+}
+
+function saveCartToLocalStorage() {
+    localStorage.setItem('shoppingCart', JSON.stringify(cart));
+}
+
+
 const addToCart = (id) => {
     for (let i = 0; i < products.length; i++) {
         if (products[i].id === id) {
@@ -22,22 +39,19 @@ const addToCart = (id) => {
             break;
         }
     }
+    saveCartToLocalStorage();
     showCart();
 };
 
-const removeFromCart = (id) => {
-    let newCart = [];
-    for (let i = 0; i < cart.length; i++) {
-        if (cart[i].id !== id) {
-            newCart.push(cart[i]);
-        }
-    }
-    cart = newCart;
+const removeFromCart = (productId) => {
+    cart = cart.filter(item => item.id !== productId);
+    saveCartToLocalStorage();
     showCart();
 };
 
 const clearCart = () => {
     cart = [];
+    localStorage.removeItem('shoppingCart');
     showCart();
 };
 
@@ -48,6 +62,7 @@ const totalPrice = () => {
     }
     return total;
 };
+
 
 const showProducts = () => {
     let filter = document.getElementById('filterInput').value.toLowerCase();
@@ -71,9 +86,9 @@ const showProducts = () => {
     document.getElementById('productsGrid').innerHTML = html;
 };
 
+
 const showCart = () => {
     let html = '';
-    
     if (cart.length === 0) {
         html = '<div class="empty-cart">Корзина пуста</div>';
     } else {
@@ -101,21 +116,23 @@ const showCart = () => {
     }
 };
 
+
 const pay = () => {
     if (cart.length === 0) {
         alert('Корзина пуста!');
     } else {
         alert('Покупка прошла успешно!');
         cart = [];
+        localStorage.removeItem('shoppingCart'); 
         showCart();
     }
 };
 
-showProducts();
-showCart();
+
+loadCartFromLocalStorage();  
+showProducts();              
+
 
 document.getElementById('filterInput').oninput = showProducts;
 document.getElementById('payBtn').onclick = pay;
 document.getElementById('clearCartBtn').onclick = clearCart;
-
-// adadada
