@@ -117,3 +117,5 @@ showCart();
 document.getElementById('filterInput').oninput = showProducts;
 document.getElementById('payBtn').onclick = pay;
 document.getElementById('clearCartBtn').onclick = clearCart;
+
+// adadada
