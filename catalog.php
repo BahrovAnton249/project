@@ -1,5 +1,5 @@
+php
 <?php
-session_start();
 require_once 'config.php';
 
 // Получаем товары из БД
@@ -8,10 +8,23 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Получаем ID товаров в избранном текущего пользователя
 $favorites_ids = [];
+$cart_count = 0;
+$fav_count = 0;
+
 if (isset($_SESSION['user_id'])) {
     $stmt = $pdo->prepare("SELECT product_id FROM favorites WHERE user_id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $favorites_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Получаем количество товаров в корзине
+    $stmt = $pdo->prepare("SELECT SUM(quantity) as total FROM cart WHERE user_id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $cart_count = $stmt->fetch()['total'] ?? 0;
+    
+    // Получаем количество товаров в избранном
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM favorites WHERE user_id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $fav_count = $stmt->fetch()['total'] ?? 0;
 }
 ?>
 
@@ -247,11 +260,11 @@ if (isset($_SESSION['user_id'])) {
             <li class="button">
                 <a href="Basket.php" class="cart-link">
                     <img src="7784863.png" alt="Корзина">
-                    <span id="cartCount" class="cart-count">0</span>
+                    <span id="cartCount" class="cart-count"><?= $cart_count ?></span>
                 </a>
             </li>
             <a href="The_chosen_ones.php" class="favorite-link"> ❤️
-                <span id="favoriteCount" class="favorite-count">0</span>
+                <span id="favoriteCount" class="favorite-count"><?= $fav_count ?></span>
             </a>
         </ul>
     </header>
@@ -359,6 +372,10 @@ if (isset($_SESSION['user_id'])) {
             
             for (let p of products) {
                 if (p.name.toLowerCase().includes(filter)) {
+                    let isFav = isFavorite(p.id);
+                    let favButtonText = isFav ? '💔 Удалить' : '❤️ В избранное';
+                    let favButtonClass = isFav ? 'favorite-btn active' : 'favorite-btn';
+                    
                     html += `
                         <div class="product-card">
                             <img src="${p.image_path}" alt="${p.name}">
@@ -366,7 +383,7 @@ if (isset($_SESSION['user_id'])) {
                             <p>${escapeHtml((p.description || '').substring(0, 100))}${(p.description && p.description.length > 100) ? '...' : ''}</p>
                             <div class="price">${p.price} ₽</div>
                             <button class="add-to-cart" onclick="addToCart(${p.id})">🛒 В корзину</button>
-                            <button class="favorite-btn" onclick="toggleFavorite(${p.id}, this)">❤️ В избранное</button>
+                            <button class="${favButtonClass}" onclick="toggleFavorite(${p.id}, this)">${favButtonText}</button>
                         </div>
                     `;
                 }

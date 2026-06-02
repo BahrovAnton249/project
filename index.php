@@ -1,5 +1,14 @@
 <?php
 require_once 'config.php';
+
+// Получаем информацию о пользователе для аватара
+$user_avatar = null;
+if (isLoggedIn()) {
+    $stmt = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch();
+    $user_avatar = $user['avatar'] ?? null;
+}
 ?>
 
 <!DOCTYPE html>
@@ -76,10 +85,28 @@ require_once 'config.php';
             margin: 15px 0;
             width: 30%;
         }
-        .account-link img {
+        .account-link {
+            display: inline-block;
+        }
+        .account-avatar {
             width: 50px;
             height: 50px;
-            vertical-align: middle;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+            background: #f39c12;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .account-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .account-avatar span {
+            font-size: 28px;
         }
         .content {
             text-align: right;
@@ -128,7 +155,13 @@ require_once 'config.php';
             <?php endif; ?>
             <li>
                 <a href="<?= isLoggedIn() ? 'profile.php' : 'login.php' ?>" class="account-link">
-                    <img src="i.webp" alt="Аккаунт">
+                    <div class="account-avatar">
+                        <?php if ($user_avatar && file_exists($user_avatar)): ?>
+                            <img src="<?= $user_avatar ?>" alt="Аватар">
+                        <?php else: ?>
+                            <span>👤</span>
+                        <?php endif; ?>
+                    </div>
                 </a>
             </li>
         </div>
