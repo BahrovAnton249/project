@@ -1,4 +1,3 @@
-php
 <?php
 require_once 'config.php';
 
@@ -16,16 +15,34 @@ if (isset($_SESSION['user_id'])) {
     $stmt->execute([$_SESSION['user_id']]);
     $favorites_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
-    // Получаем количество товаров в корзине
     $stmt = $pdo->prepare("SELECT SUM(quantity) as total FROM cart WHERE user_id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $cart_count = $stmt->fetch()['total'] ?? 0;
     
-    // Получаем количество товаров в избранном
     $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM favorites WHERE user_id = ?");
     $stmt->execute([$_SESSION['user_id']]);
     $fav_count = $stmt->fetch()['total'] ?? 0;
 }
+
+// Получаем уникальные категории
+$categories = [];
+foreach ($products as $product) {
+    $cat = $product['category'];
+    if (!empty($cat) && !in_array($cat, $categories)) {
+        $categories[] = $cat;
+    }
+}
+sort($categories);
+
+// Получаем уникальные регионы (created_at)
+$regions = [];
+foreach ($products as $product) {
+    $region = $product['created_at'];
+    if (!empty($region) && !in_array($region, $regions)) {
+        $regions[] = $region;
+    }
+}
+sort($regions);
 ?>
 
 <!DOCTYPE html>
@@ -105,27 +122,76 @@ if (isset($_SESSION['user_id'])) {
         }
         
         .filter-panel {
-            background: rgba(0,0,0,0.7);
+            background: rgba(0,0,0,0.85);
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 12px;
             margin: 20px;
-            text-align: center;
         }
         
         .filter-panel h3 {
-            color: rgb(0, 89, 255);
-            font-size: 30px;
-            font-weight: 400;
+            color: rgb(255, 123, 0);
+            font-size: 28px;
+            font-weight: 500;
             font-style: italic;
             margin: 0 0 15px 0;
+            text-align: center;
         }
         
-        .filter-input {
-            width: 50%;
+        .search-input {
+            width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
             font-size: 18px;
-            border-radius: 5px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-group label {
+            display: block;
+            color: #ffd966;
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .filter-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: rgba(255,255,255,0.9);
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .filter-reset {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-reset:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
         }
         
         hr {
@@ -165,6 +231,11 @@ if (isset($_SESSION['user_id'])) {
             padding: 15px;
             box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
             background: rgba(0,0,0,0.6);
+            transition: transform 0.3s ease;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
         }
         
         .product-card img {
@@ -250,6 +321,13 @@ if (isset($_SESSION['user_id'])) {
             font-style: italic;
             margin: 20px 0;
         }
+        
+        .filter-stats {
+            text-align: center;
+            color: white;
+            margin-top: 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -271,8 +349,58 @@ if (isset($_SESSION['user_id'])) {
     <hr>
 
     <div class="filter-panel">
-        <h3>Фильтр товаров</h3>
-        <input type="text" id="filterInput" class="filter-input" placeholder="Поиск по названию...">
+        <h3>🔍 Фильтр товаров</h3>
+        <input type="text" id="searchInput" class="search-input" placeholder="Поиск по названию...">
+        
+        <div class="filter-row">
+            <div class="filter-group">
+                <label>📂 Категория</label>
+                <select id="categoryFilter" class="filter-select">
+                    <option value="">Все категории</option>
+                    <?php foreach ($categories as $cat): ?>
+                        <option value="<?= htmlspecialchars($cat) ?>"><?= htmlspecialchars($cat) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>🌍 Регион производства</label>
+                <select id="regionFilter" class="filter-select">
+                    <option value="">Все регионы</option>
+                    <?php foreach ($regions as $region): ?>
+                        <option value="<?= htmlspecialchars($region) ?>"><?= htmlspecialchars($region) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>💰 Цена (до)</label>
+                <select id="priceFilter" class="filter-select">
+                    <option value="">Любая цена</option>
+                    <option value="100000">до 100 000 ₽</option>
+                    <option value="500000">до 500 000 ₽</option>
+                    <option value="1000000">до 1 000 000 ₽</option>
+                    <option value="5000000">до 5 000 000 ₽</option>
+                    <option value="10000000">до 10 000 000 ₽</option>
+                    <option value="20000000">до 20 000 000 ₽</option>
+                    <option value="30000000">до 30 000 000 ₽</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>⭐ Рейтинг</label>
+                <select id="ratingFilter" class="filter-select">
+                    <option value="">Любой рейтинг</option>
+                    <option value="4">4+ звезды</option>
+                    <option value="4.5">4.5+ звезды</option>
+                    <option value="4.7">4.7+ звезды</option>
+                    <option value="4.9">4.9+ звезды</option>
+                </select>
+            </div>
+            
+            <button id="resetFilters" class="filter-reset">🔄 Сбросить фильтры</button>
+        </div>
+        <div class="filter-stats" id="filterStats"></div>
     </div>
 
     <h2>Каталог</h2>
@@ -365,31 +493,85 @@ if (isset($_SESSION['user_id'])) {
             .catch(err => console.log('Ошибка:', err));
         }
 
+        // ========== ФИЛЬТРАЦИЯ ==========
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            const region = document.getElementById('regionFilter').value;
+            const maxPrice = parseFloat(document.getElementById('priceFilter').value);
+            const minRating = parseFloat(document.getElementById('ratingFilter').value);
+            
+            let filtered = products.filter(product => {
+                // Поиск по названию
+                if (searchTerm && !product.name.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+                // По категории
+                if (category && product.category !== category) {
+                    return false;
+                }
+                // По региону
+                if (region && product.created_at !== region) {
+                    return false;
+                }
+                // По максимальной цене
+                if (maxPrice && product.price > maxPrice) {
+                    return false;
+                }
+                // По минимальному рейтингу
+                if (minRating && (product.rating < minRating)) {
+                    return false;
+                }
+                return true;
+            });
+            
+            return filtered;
+        }
+        
+        function updateFilterStats(count) {
+            const statsDiv = document.getElementById('filterStats');
+            if (statsDiv) {
+                statsDiv.innerHTML = `Найдено товаров: ${count}`;
+            }
+        }
+        
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('regionFilter').value = '';
+            document.getElementById('priceFilter').value = '';
+            document.getElementById('ratingFilter').value = '';
+            showProducts();
+        }
+
         // ========== ОТОБРАЖЕНИЕ ТОВАРОВ ==========
         function showProducts() {
-            let filter = document.getElementById('filterInput').value.toLowerCase();
+            const filteredProducts = filterProducts();
             let html = '';
             
-            for (let p of products) {
-                if (p.name.toLowerCase().includes(filter)) {
-                    let isFav = isFavorite(p.id);
-                    let favButtonText = isFav ? '💔 Удалить' : '❤️ В избранное';
-                    let favButtonClass = isFav ? 'favorite-btn active' : 'favorite-btn';
-                    
-                    html += `
-                        <div class="product-card">
-                            <img src="${p.image_path}" alt="${p.name}">
-                            <h3><a href="product.php?id=${p.id}">${escapeHtml(p.name)}</a></h3>
-                            <p>${escapeHtml((p.description || '').substring(0, 100))}${(p.description && p.description.length > 100) ? '...' : ''}</p>
-                            <div class="price">${p.price} ₽</div>
-                            <button class="add-to-cart" onclick="addToCart(${p.id})">🛒 В корзину</button>
-                            <button class="${favButtonClass}" onclick="toggleFavorite(${p.id}, this)">${favButtonText}</button>
-                        </div>
-                    `;
-                }
+            for (let p of filteredProducts) {
+                let isFav = isFavorite(p.id);
+                let favButtonText = isFav ? '💔 Удалить' : '❤️ В избранное';
+                let favButtonClass = isFav ? 'favorite-btn active' : 'favorite-btn';
+                
+                let description = (p.description || '').substring(0, 100);
+                if (p.description && p.description.length > 100) description += '...';
+                
+                html += `
+                    <div class="product-card">
+                        <img src="${p.image_path}" alt="${p.name}" onerror="this.src='/Uncle/Productimages/no-image.jpg'">
+                        <h3><a href="product.php?id=${p.id}">${escapeHtml(p.name)}</a></h3>
+                        <p>${escapeHtml(description)}</p>
+                        <div class="price">${Number(p.price).toLocaleString()} ₽</div>
+                        <div style="font-size: 12px; color: #ffd966; margin: 5px 0;">⭐ ${p.rating || 'Нет оценок'} | 📍 ${escapeHtml(p.created_at || 'Не указан')}</div>
+                        <button class="add-to-cart" onclick="addToCart(${p.id})">🛒 В корзину</button>
+                        <button class="${favButtonClass}" onclick="toggleFavorite(${p.id}, this)">${favButtonText}</button>
+                    </div>
+                `;
             }
             
-            document.getElementById('productsGrid').innerHTML = html || '<p style="color:white; text-align:center;">Товаров не найдено</p>';
+            document.getElementById('productsGrid').innerHTML = html || '<p style="color:white; text-align:center; padding: 50px;">😔 Товаров не найдено. Попробуйте изменить фильтры.</p>';
+            updateFilterStats(filteredProducts.length);
         }
         
         function escapeHtml(str) {
@@ -403,8 +585,27 @@ if (isset($_SESSION['user_id'])) {
         }
 
         // ========== ИНИЦИАЛИЗАЦИЯ ==========
-        document.getElementById('filterInput').addEventListener('input', showProducts);
-        showProducts();
+        function initFilters() {
+            const searchInput = document.getElementById('searchInput');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const regionFilter = document.getElementById('regionFilter');
+            const priceFilter = document.getElementById('priceFilter');
+            const ratingFilter = document.getElementById('ratingFilter');
+            const resetBtn = document.getElementById('resetFilters');
+            
+            const update = () => showProducts();
+            
+            if (searchInput) searchInput.addEventListener('input', update);
+            if (categoryFilter) categoryFilter.addEventListener('change', update);
+            if (regionFilter) regionFilter.addEventListener('change', update);
+            if (priceFilter) priceFilter.addEventListener('change', update);
+            if (ratingFilter) ratingFilter.addEventListener('change', update);
+            if (resetBtn) resetBtn.addEventListener('click', resetFilters);
+            
+            showProducts();
+        }
+        
+        initFilters();
         if (isLoggedIn) {
             updateCartCount();
             updateFavoriteCount();
