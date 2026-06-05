@@ -1,7 +1,6 @@
 <?php
 require_once 'config.php';
 
-// Получаем информацию о пользователе для аватара
 $user_avatar = null;
 if (isLoggedIn()) {
     $stmt = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");

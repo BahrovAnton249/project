@@ -8,7 +8,7 @@ if (!isLoggedIn()) {
 
 $user_id = $_SESSION['user_id'];
 
-// Получаем товары в корзине
+
 $stmt = $pdo->prepare("
     SELECT c.id as cart_id, c.quantity, p.* 
     FROM cart c 

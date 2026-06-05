@@ -11,12 +11,12 @@ switch ($method . ':' . $action) {
     case 'POST:register':
         $data = json_decode(file_get_contents('php://input'), true);
         echo json_encode($controller->register($data));
-        return; // останавливаем выполнение
+        return; 
 
     case 'POST:login':
         $data = json_decode(file_get_contents('php://input'), true);
         echo json_encode($controller->login($data));
-        return; // останавливаем выполнение
+        return; 
 
     case 'GET:users':
         echo json_encode($controller->getAll());
