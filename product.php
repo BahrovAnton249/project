@@ -1,6 +1,5 @@
 <?php
 require_once 'config.php';
-// Получаем ID товара из URL
 $product_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($product_id <= 0) {
@@ -8,7 +7,6 @@ if ($product_id <= 0) {
     exit;
 }
 
-// Получаем данные товара из БД
 $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
 $stmt->execute([$product_id]);
 $product = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -18,7 +16,6 @@ if (!$product) {
     exit;
 }
 
-// Декодируем характеристики из JSON с проверкой
 $characteristics = null;
 if (!empty($product['characteristics'])) {
     if (is_array($product['characteristics'])) {
@@ -31,7 +28,6 @@ if (!empty($product['characteristics'])) {
     }
 }
 
-// Проверяем, в избранном ли товар
 $is_favorite = false;
 if (isset($_SESSION['user_id'])) {
     $stmt = $pdo->prepare("SELECT id FROM favorites WHERE user_id = ? AND product_id = ?");
@@ -39,7 +35,6 @@ if (isset($_SESSION['user_id'])) {
     $is_favorite = $stmt->fetch() ? true : false;
 }
 
-// Получаем количество товаров в корзине и избранном для счётчиков
 $cart_count = 0;
 $fav_count = 0;
 if (isset($_SESSION['user_id'])) {
@@ -52,7 +47,6 @@ if (isset($_SESSION['user_id'])) {
     $fav_count = $stmt->fetch()['total'] ?? 0;
 }
 
-// Получаем аватар пользователя для шапки
 $user_avatar = null;
 if (isset($_SESSION['user_id'])) {
     $stmt = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
@@ -61,7 +55,6 @@ if (isset($_SESSION['user_id'])) {
     $user_avatar = $user['avatar'] ?? null;
 }
 
-// Получаем комментарии к товару
 $stmt = $pdo->prepare("
     SELECT r.*, u.username, u.avatar 
     FROM reviews r 
@@ -72,7 +65,6 @@ $stmt = $pdo->prepare("
 $stmt->execute([$product_id]);
 $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Обработка добавления комментария
 $review_success = '';
 $review_error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isset($_SESSION['user_id'])) {
@@ -87,14 +79,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
         $stmt = $pdo->prepare("INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)");
         $stmt->execute([$product_id, $_SESSION['user_id'], $rating, $comment]);
         $review_success = '✅ Спасибо за отзыв!';
-        // Обновляем рейтинг товара
         $stmt = $pdo->prepare("SELECT AVG(rating) as avg_rating FROM reviews WHERE product_id = ?");
         $stmt->execute([$product_id]);
         $avg_rating = $stmt->fetch()['avg_rating'] ?? 4.5;
         $stmt = $pdo->prepare("UPDATE products SET rating = ? WHERE id = ?");
         $stmt->execute([round($avg_rating, 1), $product_id]);
         
-        // Перезагружаем страницу
         header("Location: product.php?id=$product_id");
         exit;
     }
@@ -122,7 +112,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             min-height: 100vh;
         }
 
-        /* ШАПКА (как в каталоге) */
         header ul {
             background-color: rgba(233, 236, 15, 0.7);
             padding: 20px 40px;
@@ -236,7 +225,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             font-size: 28px;
         }
 
-        /* ОСНОВНОЙ КОНТЕЙНЕР */
         .product-container {
             max-width: 1200px;
             margin: 40px auto;
@@ -261,7 +249,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             color: white;
         }
 
-        /* КАРТОЧКА ТОВАРА */
         .product-card {
             background: rgba(0, 0, 0, 0.85);
             border-radius: 24px;
@@ -277,7 +264,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             padding: 30px;
         }
 
-        /* ЛЕВАЯ ЧАСТЬ — КАРТИНКА */
         .product-image {
             flex: 1;
             min-width: 300px;
@@ -303,7 +289,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             font-size: 12px;
         }
 
-        /* КНОПКИ ПОД КАРТИНКОЙ */
         .image-buttons {
             display: flex;
             gap: 15px;
@@ -342,7 +327,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             transform: translateY(-2px);
         }
 
-        /* ПРАВАЯ ЧАСТЬ — ИНФОРМАЦИЯ */
         .product-info {
             flex: 1;
             min-width: 300px;
@@ -383,7 +367,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             font-size: 20px;
         }
 
-        /* ХАРАКТЕРИСТИКИ */
         .characteristics {
             margin-bottom: 30px;
             background: rgba(255,255,255,0.05);
@@ -420,7 +403,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             color: white;
         }
 
-        /* КНОПКИ ДЕЙСТВИЙ */
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -481,7 +463,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             background: rgba(0,0,0,0.9);
         }
 
-        /* МОДАЛЬНОЕ ОКНО ДЛЯ КАРТИНКИ */
         .modal {
             display: none;
             position: fixed;
@@ -513,7 +494,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             cursor: pointer;
         }
 
-        /* СЕКЦИЯ КОММЕНТАРИЕВ */
         .reviews-section {
             margin-top: 40px;
             padding: 30px;
@@ -720,15 +700,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
 
     <div class="product-card">
         <div class="product-content">
-            <!-- Левая часть: картинка -->
             <div class="product-image">
                 <img src="<?= htmlspecialchars($product['image_path']) ?>" 
                      alt="<?= htmlspecialchars($product['name']) ?>"
                      onclick="openModal(this.src)"
                      onerror="this.src='/Uncle/Productimages/no-image.jpg'">
                 <div class="image-caption">📷 Нажмите на картинку для увеличения</div>
-                
-                <!-- Кнопки под картинкой -->
                 <div class="image-buttons">
                     <button class="image-btn image-btn-cart" onclick="addToCart(<?= $product['id'] ?>)">
                         🛒 В корзину
@@ -739,8 +716,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
                     </button>
                 </div>
             </div>
-
-            <!-- Правая часть: информация -->
             <div class="product-info">
                 <h1 class="product-name"><?= htmlspecialchars($product['name']) ?></h1>
                 <div class="product-price"><?= number_format($product['price'], 0, ',', ' ') ?> ₽</div>
@@ -779,8 +754,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             </div>
         </div>
     </div>
-
-    <!-- Секция комментариев -->
     <div class="reviews-section">
         <h3>💬 Отзывы о товаре</h3>
         
@@ -813,8 +786,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
                 🔐 <a href="login.php" style="color: #2ecc71;">Войдите в аккаунт</a>, чтобы оставить отзыв
             </div>
         <?php endif; ?>
-        
-        <!-- Список отзывов -->
         <?php if (count($reviews) > 0): ?>
             <?php foreach ($reviews as $review): ?>
                 <div class="review-item">
@@ -845,8 +816,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
     <p>&copy; Все права защищены! Воровство — последнее ремесло.</p>
 </footer>
 <hr>
-
-<!-- Модальное окно для увеличения картинки -->
 <div id="imageModal" class="modal" onclick="closeModal()">
     <span class="modal-close">&times;</span>
     <img id="modalImage" src="">
@@ -855,7 +824,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
 <script>
     const isLoggedIn = <?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>;
 
-    // Модальное окно
     function openModal(src) {
         document.getElementById('modalImage').src = src;
         document.getElementById('imageModal').style.display = 'flex';
@@ -864,8 +832,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
     function closeModal() {
         document.getElementById('imageModal').style.display = 'none';
     }
-
-    // Обновление счётчиков
     function updateCartCount() {
         if (!isLoggedIn) return;
         fetch('get_cart_count.php')
@@ -885,8 +851,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
                 if (el) el.textContent = data.count;
             });
     }
-
-    // Добавление в корзину
     function addToCart(id) {
         if (!isLoggedIn) {
             alert('Войдите в аккаунт, чтобы добавить товар в корзину');
@@ -903,7 +867,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
         });
     }
 
-    // Переключение избранного
     function toggleFavorite(productId, button) {
         if (!isLoggedIn) {
             alert('Войдите в аккаунт, чтобы добавить в избранное');
@@ -926,8 +889,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_review']) && isse
             updateFavoriteCount();
         });
     }
-
-    // Обновляем счётчики при загрузке
     if (isLoggedIn) {
         updateCartCount();
         updateFavoriteCount();

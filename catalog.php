@@ -1,11 +1,11 @@
 <?php
 require_once 'config.php';
 
-// Получаем товары из БД
+
 $stmt = $pdo->query("SELECT * FROM products");
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Получаем ID товаров в избранном текущего пользователя
+
 $favorites_ids = [];
 $cart_count = 0;
 $fav_count = 0;
@@ -24,7 +24,7 @@ if (isset($_SESSION['user_id'])) {
     $fav_count = $stmt->fetch()['total'] ?? 0;
 }
 
-// Получаем уникальные категории
+
 $categories = [];
 foreach ($products as $product) {
     $cat = $product['category'];
@@ -34,7 +34,7 @@ foreach ($products as $product) {
 }
 sort($categories);
 
-// Получаем уникальные регионы (created_at)
+
 $regions = [];
 foreach ($products as $product) {
     $region = $product['created_at'];
@@ -412,7 +412,6 @@ sort($regions);
     <hr class="another">
 
     <script>
-        // Товары из БД
         const products = <?= json_encode($products) ?>;
         const isLoggedIn = <?= isset($_SESSION['user_id']) ? 'true' : 'false' ?>;
         let favoritesState = <?= json_encode($favorites_ids) ?>;
@@ -421,7 +420,6 @@ sort($regions);
             return favoritesState.includes(productId);
         }
 
-        // ========== КОРЗИНА ==========
         function updateCartCount() {
             if (!isLoggedIn) return;
             fetch('get_cart_count.php')
@@ -450,7 +448,6 @@ sort($regions);
             .catch(err => console.log('Ошибка:', err));
         }
 
-        // ========== ИЗБРАННОЕ ==========
         function updateFavoriteCount() {
             if (!isLoggedIn) return;
             fetch('get_fav_count.php')
@@ -492,8 +489,6 @@ sort($regions);
             })
             .catch(err => console.log('Ошибка:', err));
         }
-
-        // ========== ФИЛЬТРАЦИЯ ==========
         function filterProducts() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const category = document.getElementById('categoryFilter').value;
@@ -502,23 +497,18 @@ sort($regions);
             const minRating = parseFloat(document.getElementById('ratingFilter').value);
             
             let filtered = products.filter(product => {
-                // Поиск по названию
                 if (searchTerm && !product.name.toLowerCase().includes(searchTerm)) {
                     return false;
                 }
-                // По категории
                 if (category && product.category !== category) {
                     return false;
                 }
-                // По региону
                 if (region && product.created_at !== region) {
                     return false;
                 }
-                // По максимальной цене
                 if (maxPrice && product.price > maxPrice) {
                     return false;
                 }
-                // По минимальному рейтингу
                 if (minRating && (product.rating < minRating)) {
                     return false;
                 }
@@ -543,8 +533,6 @@ sort($regions);
             document.getElementById('ratingFilter').value = '';
             showProducts();
         }
-
-        // ========== ОТОБРАЖЕНИЕ ТОВАРОВ ==========
         function showProducts() {
             const filteredProducts = filterProducts();
             let html = '';
@@ -584,7 +572,6 @@ sort($regions);
             });
         }
 
-        // ========== ИНИЦИАЛИЗАЦИЯ ==========
         function initFilters() {
             const searchInput = document.getElementById('searchInput');
             const categoryFilter = document.getElementById('categoryFilter');

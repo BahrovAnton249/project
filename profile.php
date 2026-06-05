@@ -1,7 +1,7 @@
 <?php
 require_once 'config.php';
 
-// Если пользователь не авторизован — отправляем на страницу входа
+
 if (!isLoggedIn()) {
     header('Location: login.php');
     exit;
@@ -11,10 +11,9 @@ $user_id = $_SESSION['user_id'];
 $success_message = '';
 $error_message = '';
 
-// Обработка загрузки фото
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['save_profile'])) {
-        // Сохраняем текстовые поля
         $bio = trim($_POST['bio'] ?? '');
         $birth_date = trim($_POST['birth_date'] ?? '');
         $gender = trim($_POST['gender'] ?? '');
@@ -24,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $success_message = '✅ Профиль обновлён!';
     }
     
-    // Обработка загрузки аватара
     if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
         $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
         $file_type = $_FILES['avatar']['type'];
@@ -42,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $filepath = $upload_dir . $filename;
             
             if (move_uploaded_file($_FILES['avatar']['tmp_name'], $filepath)) {
-                // Удаляем старый аватар
                 $stmt = $pdo->prepare("SELECT avatar FROM users WHERE id = ?");
                 $stmt->execute([$user_id]);
                 $old = $stmt->fetch();
@@ -60,7 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Получаем информацию о пользователе
 $stmt = $pdo->prepare("SELECT id, username, email, created_at, bio, birth_date, gender, avatar FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -71,7 +67,6 @@ if (!$user) {
     exit;
 }
 
-// Получаем количество товаров в корзине и избранном
 $stmt = $pdo->prepare("SELECT SUM(quantity) as cart_count FROM cart WHERE user_id = ?");
 $stmt->execute([$user_id]);
 $cart_count = $stmt->fetch()['cart_count'] ?? 0;
@@ -378,7 +373,6 @@ $fav_count = $stmt->fetch()['fav_count'] ?? 0;
         </form>
     </div>
 
-    <!-- Сообщения -->
     <?php if ($success_message): ?>
         <div class="message success"><?= $success_message ?></div>
     <?php endif; ?>
@@ -386,7 +380,6 @@ $fav_count = $stmt->fetch()['fav_count'] ?? 0;
         <div class="message error"><?= $error_message ?></div>
     <?php endif; ?>
 
-    <!-- Статистика (корзина и избранное) -->
     <div class="stats-row">
         <a href="Basket.php" class="stat-card">
             <div class="stat-number">🛒 <?= $cart_count ?></div>
@@ -399,7 +392,6 @@ $fav_count = $stmt->fetch()['fav_count'] ?? 0;
     </div>
 
     <div class="info-section">
-        <!-- Имя пользователя (только для просмотра) -->
         <div class="info-item">
             <div class="info-icon">📛</div>
             <div class="info-content">
@@ -408,7 +400,6 @@ $fav_count = $stmt->fetch()['fav_count'] ?? 0;
             </div>
         </div>
 
-        <!-- Email (только для просмотра) -->
         <div class="info-item">
             <div class="info-icon">📧</div>
             <div class="info-content">
@@ -417,7 +408,6 @@ $fav_count = $stmt->fetch()['fav_count'] ?? 0;
             </div>
         </div>
 
-        <!-- Дата регистрации (только для просмотра) -->
         <div class="info-item">
             <div class="info-icon">📅</div>
             <div class="info-content">
@@ -426,7 +416,6 @@ $fav_count = $stmt->fetch()['fav_count'] ?? 0;
             </div>
         </div>
 
-        <!-- ID (только для просмотра) -->
         <div class="info-item">
             <div class="info-icon">🆔</div>
             <div class="info-content">
@@ -435,9 +424,7 @@ $fav_count = $stmt->fetch()['fav_count'] ?? 0;
             </div>
         </div>
 
-        <!-- Редактируемые поля -->
         <form method="POST">
-            <!-- О себе -->
             <div class="info-item">
                 <div class="info-icon">📝</div>
                 <div class="info-content">
@@ -448,7 +435,6 @@ $fav_count = $stmt->fetch()['fav_count'] ?? 0;
                 </div>
             </div>
 
-            <!-- День рождения -->
             <div class="info-item">
                 <div class="info-icon">🎂</div>
                 <div class="info-content">
@@ -458,8 +444,6 @@ $fav_count = $stmt->fetch()['fav_count'] ?? 0;
                     </div>
                 </div>
             </div>
-
-            <!-- Пол -->
             <div class="info-item">
                 <div class="info-icon">⚧</div>
                 <div class="info-content">
